@@ -185,6 +185,13 @@ pub fn run() {
                 }
             }
 
+            // --- WebView 背景透明 ---
+            // Windows 上 WebView2 默认背景不透明，需要显式设置 alpha=0
+            if let Some(window) = app.get_webview_window("main") {
+                use tauri::utils::config::Color;
+                let _ = window.set_background_color(Some(Color(0, 0, 0, 0)));
+            }
+
             Ok(())
         })
         // 窗口失焦时自动隐藏 (设置页面除外)
