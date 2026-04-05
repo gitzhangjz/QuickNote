@@ -15,8 +15,6 @@
     "core:window:allow-is-visible",
     "core:event:default",
     "core:tray:default",
-    "core:menu:default",
-    "global-shortcut:default",
-    "autostart:default"
+    "core:menu:default"
   ]
 }
