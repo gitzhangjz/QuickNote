@@ -74,7 +74,7 @@ export default function Sidebar() {
   return (
     <div class="sidebar" onKeyDown={handleKeyDown}>
       {/* 顶部标题栏 */}
-      <div class="sidebar-header">
+      <div class="sidebar-header" data-tauri-drag-region>
         <span class="sidebar-title">QuickNote</span>
         <div class="sidebar-actions">
           <button

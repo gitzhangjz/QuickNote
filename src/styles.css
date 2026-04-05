@@ -56,18 +56,16 @@ html, body {
   width: 100vw;
   height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .center-card {
   width: 100%;
-  max-width: 480px;
   background: var(--bg-secondary);
   border-radius: 12px;
   padding: 16px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  box-sizing: border-box;
 }
 
 .center-input-row {

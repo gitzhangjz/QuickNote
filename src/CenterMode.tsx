@@ -91,7 +91,7 @@ export default function CenterMode() {
             rows={1}
           />
         </div>
-        <div class="center-footer">
+        <div class="center-footer" data-tauri-drag-region>
           <div class="center-hints-left">
             <span class="hint-tag">#标签</span>
             <span

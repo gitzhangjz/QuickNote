@@ -97,7 +97,7 @@ export default function Settings() {
 
   return (
     <div class="settings">
-      <div class="settings-header">
+      <div class="settings-header" data-tauri-drag-region>
         <button class="back-btn" onClick={handleBack}>{"\u2190"} 返回</button>
         <h2 class="settings-title">设置</h2>
       </div>
