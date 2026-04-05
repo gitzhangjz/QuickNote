@@ -11,6 +11,7 @@ import { loadNotes } from "./notes-store";
 import { loadConfig, config, currentView, setCurrentView } from "./config-store";
 import CenterMode from "./CenterMode";
 import Sidebar from "./Sidebar";
+import Settings from "./Settings";
 
 export default function App() {
   onMount(async () => {
@@ -47,7 +48,7 @@ export default function App() {
         <Sidebar />
       </Show>
       <Show when={currentView() === "settings"}>
-        <div>设置 (待实现)</div>
+        <Settings />
       </Show>
     </div>
   );

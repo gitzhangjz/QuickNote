@@ -392,3 +392,149 @@ html, body {
 .filter-btn:hover {
   opacity: 0.8;
 }
+
+/* ===== 设置页面 ===== */
+.settings {
+  width: 100%;
+  height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.back-btn:hover {
+  color: var(--text-primary);
+}
+
+.settings-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.settings-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.setting-item {
+  margin-bottom: 24px;
+}
+
+.setting-label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hotkey-display {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  width: 200px;
+  outline: none;
+  cursor: pointer;
+  text-align: center;
+}
+
+.hotkey-display:focus {
+  border-color: var(--accent);
+}
+
+.setting-options {
+  display: flex;
+  gap: 8px;
+}
+
+.option-btn {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.option-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.toggle-btn.active {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #fff;
+}
+
+.dir-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.dir-input:focus {
+  border-color: var(--accent);
+}
+
+.settings-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.save-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  opacity: 0.9;
+}
