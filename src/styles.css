@@ -118,7 +118,7 @@ html, body {
 }
 
 .center-input {
-  width: 100%;
+  width: 85%;
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: 8px;
