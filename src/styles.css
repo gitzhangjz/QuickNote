@@ -54,6 +54,9 @@ html, body {
 /* ===== 标签自动补全下拉 ===== */
 .tag-suggest-anchor {
   position: relative;
+}
+
+.center-input-row .tag-suggest-anchor {
   flex: 1;
 }
 
@@ -115,7 +118,7 @@ html, body {
 }
 
 .center-input {
-  flex: 1;
+  width: 100%;
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: 8px;
