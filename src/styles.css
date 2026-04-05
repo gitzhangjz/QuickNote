@@ -51,6 +51,39 @@ html, body {
   height: 100%;
 }
 
+/* ===== 标签自动补全下拉 ===== */
+.tag-suggest-anchor {
+  position: relative;
+  flex: 1;
+}
+
+.tag-suggest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 4px;
+  box-shadow: var(--shadow);
+}
+
+.tag-suggest-item {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.tag-suggest-item:hover,
+.tag-suggest-item.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* ===== 居中输入框模式 ===== */
 .center-overlay {
   width: 100vw;

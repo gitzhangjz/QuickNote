@@ -3,11 +3,12 @@
  *
  * 交互逻辑:
  * - 窗口获得焦点时自动聚焦输入框
- * - Enter: 保存笔记并隐藏窗口
+ * - Enter: 保存笔记并隐藏窗口 (标签建议打开时为选中标签)
  * - Shift+Enter: 换行
  * - Ctrl+S: 切换置顶状态
- * - Esc: 隐藏窗口
- * - #标签名: 自动识别为标签
+ * - Ctrl+M: 切换到侧边栏模式
+ * - Esc: 关闭标签建议 / 隐藏窗口
+ * - #标签名: 自动识别为标签，弹出自动补全
  * - 输入框下方显示最近的笔记记录
  */
 
@@ -17,17 +18,21 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createNote, filteredNotes, loadNotes, deleteNote, updateNote } from "./notes-store";
 import { setCurrentView, switchMode } from "./config-store";
 import { invoke } from "@tauri-apps/api/core";
+import TagSuggest, { getTagContext, getFilteredTags, insertTag } from "./TagSuggest";
 
 export default function CenterMode() {
   let inputRef!: HTMLTextAreaElement;
   const [content, setContent] = createSignal("");
   const [pinned, setPinned] = createSignal(false);
+  const [tagCtx, setTagCtx] = createSignal<{ partial: string; start: number } | null>(null);
+  const [suggestIndex, setSuggestIndex] = createSignal(0);
 
   onMount(async () => {
     // 每次窗口获得焦点时，聚焦输入框并刷新笔记列表
     const unlisten = await listen("tauri://focus", async () => {
       setContent("");
       setPinned(false);
+      setTagCtx(null);
       await loadNotes();
       inputRef?.focus();
     });
@@ -65,20 +70,66 @@ export default function CenterMode() {
     await window.hide();
   }
 
+  /** 输入变化时检测 #tag 上下文 */
+  function handleInput(e: InputEvent & { currentTarget: HTMLTextAreaElement }) {
+    const el = e.currentTarget;
+    setContent(el.value);
+    const cursorPos = el.selectionStart ?? el.value.length;
+    const ctx = getTagContext(el.value, cursorPos);
+    setTagCtx(ctx);
+    if (ctx) setSuggestIndex(0);
+  }
+
+  /** 选中标签建议，插入到文本中 */
+  function handleTagSelect(tag: string) {
+    const ctx = tagCtx();
+    if (!ctx) return;
+    const cursorPos = inputRef.selectionStart ?? content().length;
+    const { newText, newCursor } = insertTag(content(), ctx.start, cursorPos, tag);
+    setContent(newText);
+    setTagCtx(null);
+    requestAnimationFrame(() => {
+      inputRef.selectionStart = newCursor;
+      inputRef.selectionEnd = newCursor;
+      inputRef.focus();
+    });
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
+    // 标签建议激活时，优先处理方向键、回车、Esc
+    const ctx = tagCtx();
+    if (ctx) {
+      const suggestions = getFilteredTags(ctx.partial);
+      if (suggestions.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSuggestIndex((i) => (i + 1) % suggestions.length);
+          return;
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSuggestIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+          return;
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          handleTagSelect(suggestions[suggestIndex()]);
+          return;
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          setTagCtx(null);
+          return;
+        }
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
-      // Enter 保存
       e.preventDefault();
       handleSave();
     } else if (e.key === "Escape") {
-      // Esc 隐藏
       getCurrentWindow().hide();
     } else if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
-      // Ctrl+S 切换置顶
       e.preventDefault();
       setPinned((prev) => !prev);
     } else if (e.key === "m" && (e.ctrlKey || e.metaKey)) {
-      // Ctrl+M 切换模式
       e.preventDefault();
       switchMode();
     }
@@ -99,15 +150,23 @@ export default function CenterMode() {
       <div class="center-card">
         <div class="center-input-row">
           <span class="center-icon">{pinned() ? "\u2605" : "\u270E"}</span>
-          <textarea
-            ref={inputRef}
-            class="center-input"
-            placeholder="记下你的灵感..."
-            value={content()}
-            onInput={(e) => setContent(e.currentTarget.value)}
-            onKeyDown={handleKeyDown}
-            rows={1}
-          />
+          <div class="tag-suggest-anchor">
+            <textarea
+              ref={inputRef}
+              class="center-input"
+              placeholder="记下你的灵感..."
+              value={content()}
+              onInput={handleInput}
+              onKeyDown={handleKeyDown}
+              rows={1}
+            />
+            <TagSuggest
+              query={tagCtx()?.partial ?? ""}
+              visible={!!tagCtx()}
+              activeIndex={suggestIndex()}
+              onSelect={handleTagSelect}
+            />
+          </div>
         </div>
         <div class="center-footer" data-tauri-drag-region>
           <div class="center-hints-left">

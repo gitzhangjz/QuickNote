@@ -2,8 +2,8 @@
  * 侧边栏模式 —— 笔记列表 + 新建输入 + 标签筛选
  *
  * 布局 (从上到下):
- * 1. 顶部标题栏 (标题 + 搜索/设置按钮)
- * 2. 新建笔记输入框
+ * 1. 顶部标题栏 (标题 + 搜索/切换模式/设置按钮)
+ * 2. 新建笔记输入框 (支持 #标签 自动补全)
  * 3. 笔记列表 (可滚动)
  * 4. 底部标签筛选栏
  */
@@ -26,10 +26,13 @@ import {
 import { setCurrentView, switchMode } from "./config-store";
 import { invoke } from "@tauri-apps/api/core";
 import NoteItem from "./NoteItem";
+import TagSuggest, { getTagContext, getFilteredTags, insertTag } from "./TagSuggest";
 
 export default function Sidebar() {
   const [newContent, setNewContent] = createSignal("");
   const [showSearch, setShowSearch] = createSignal(false);
+  const [tagCtx, setTagCtx] = createSignal<{ partial: string; start: number } | null>(null);
+  const [suggestIndex, setSuggestIndex] = createSignal(0);
   let newInputRef!: HTMLInputElement;
   let searchInputRef!: HTMLInputElement;
 
@@ -61,25 +64,83 @@ export default function Sidebar() {
 
     await createNote(cleanContent || raw, tags);
     setNewContent("");
+    setTagCtx(null);
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
+  /** 输入变化时检测 #tag 上下文 */
+  function handleNewInput(e: InputEvent & { currentTarget: HTMLInputElement }) {
+    const el = e.currentTarget;
+    setNewContent(el.value);
+    const cursorPos = el.selectionStart ?? el.value.length;
+    const ctx = getTagContext(el.value, cursorPos);
+    setTagCtx(ctx);
+    if (ctx) setSuggestIndex(0);
+  }
+
+  /** 选中标签建议，插入到文本中 */
+  function handleTagSelect(tag: string) {
+    const ctx = tagCtx();
+    if (!ctx) return;
+    const cursorPos = newInputRef.selectionStart ?? newContent().length;
+    const { newText, newCursor } = insertTag(newContent(), ctx.start, cursorPos, tag);
+    setNewContent(newText);
+    setTagCtx(null);
+    requestAnimationFrame(() => {
+      newInputRef.selectionStart = newCursor;
+      newInputRef.selectionEnd = newCursor;
+      newInputRef.focus();
+    });
+  }
+
+  /** 新建输入框的键盘事件 */
+  function handleNewKeyDown(e: KeyboardEvent) {
+    // 标签建议激活时，优先处理
+    const ctx = tagCtx();
+    if (ctx) {
+      const suggestions = getFilteredTags(ctx.partial);
+      if (suggestions.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          e.stopPropagation();
+          setSuggestIndex((i) => (i + 1) % suggestions.length);
+          return;
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          e.stopPropagation();
+          setSuggestIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+          return;
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleTagSelect(suggestions[suggestIndex()]);
+          return;
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          setTagCtx(null);
+          return;
+        }
+      }
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       handleCreate();
-    } else if (e.key === "Escape") {
+    }
+  }
+
+  /** 全局键盘事件 (侧边栏容器级别) */
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
       getCurrentWindow().hide();
     } else if (e.key === "f" && (e.ctrlKey || e.metaKey)) {
-      // Ctrl+F 切换搜索栏并聚焦
       e.preventDefault();
       const willShow = !showSearch();
       setShowSearch(willShow);
       if (willShow) {
-        // 等 DOM 更新后聚焦搜索框
         requestAnimationFrame(() => searchInputRef?.focus());
       }
     } else if (e.key === "m" && (e.ctrlKey || e.metaKey)) {
-      // Ctrl+M 切换模式
       e.preventDefault();
       switchMode();
     }
@@ -136,20 +197,21 @@ export default function Sidebar() {
         </div>
       </Show>
 
-      {/* 新建笔记输入 */}
-      <div class="sidebar-new">
+      {/* 新建笔记输入 + 标签自动补全 */}
+      <div class="sidebar-new tag-suggest-anchor">
         <input
           ref={newInputRef}
           class="new-input"
           placeholder="+ 新建笔记..."
           value={newContent()}
-          onInput={(e) => setNewContent(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleCreate();
-            }
-          }}
+          onInput={handleNewInput}
+          onKeyDown={handleNewKeyDown}
+        />
+        <TagSuggest
+          query={tagCtx()?.partial ?? ""}
+          visible={!!tagCtx()}
+          activeIndex={suggestIndex()}
+          onSelect={handleTagSelect}
         />
       </div>
 
