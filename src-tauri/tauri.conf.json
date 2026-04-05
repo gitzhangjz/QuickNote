@@ -16,7 +16,7 @@
         "label": "main",
         "title": "QuickNote",
         "width": 500,
-        "height": 160,
+        "height": 500,
         "visible": false,
         "transparent": true,
         "decorations": false,

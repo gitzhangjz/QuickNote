@@ -25,7 +25,7 @@ use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 pub fn apply_window_mode(window: &WebviewWindow, mode: &str) {
     match mode {
         "center" => {
-            let _ = window.set_size(tauri::LogicalSize::new(500.0, 160.0));
+            let _ = window.set_size(tauri::LogicalSize::new(500.0, 500.0));
             let _ = window.center();
             let _ = window.set_resizable(false);
         }

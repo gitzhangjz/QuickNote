@@ -56,8 +56,8 @@ html, body {
   width: 100vw;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  justify-content: stretch;
 }
 
 .center-card {
@@ -66,6 +66,7 @@ html, body {
   border-radius: 12px;
   padding: 16px;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .center-input-row {
@@ -145,6 +146,88 @@ html, body {
 .hint {
   color: var(--text-hint);
   font-size: 11px;
+}
+
+/* 居中模式 — 最近笔记列表 */
+.center-notes {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.center-note-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.center-note-item:hover {
+  background: var(--bg-secondary);
+}
+
+.center-note-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.center-note-text {
+  color: var(--text-primary);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.center-note-tags {
+  color: var(--tag-text);
+  font-size: 10px;
+}
+
+.center-note-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.center-note-time {
+  color: var(--text-hint);
+  font-size: 10px;
+}
+
+.center-note-pin,
+.center-note-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  color: var(--text-hint);
+}
+
+.center-note-pin:hover {
+  color: var(--pin-active);
+}
+
+.center-note-pin.active {
+  color: var(--pin-active);
+}
+
+.center-note-delete:hover {
+  color: #e74c3c;
+}
+
+.center-note-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-hint);
+  font-size: 12px;
 }
 
 /* ===== 侧边栏模式 ===== */
