@@ -10,6 +10,7 @@ use std::sync::Mutex;
 use tauri::{Manager, State};
 
 /// 应用共享状态，通过 Tauri State 管理
+/// 锁获取顺序: config → notes (所有代码路径必须遵守此顺序以避免死锁)
 pub struct AppState {
     /// 内存中的笔记列表缓存
     pub notes: Mutex<Vec<Note>>,

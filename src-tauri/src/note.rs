@@ -60,6 +60,11 @@ pub fn parse_note(raw: &str) -> Option<Note> {
         }
     }
 
+    // 必须有 id 和 created 字段才算有效笔记
+    if id.is_empty() || created.is_empty() {
+        return None;
+    }
+
     Some(Note { id, created, tags, pinned, content })
 }
 
@@ -91,8 +96,11 @@ pub fn generate_id() -> String {
 /// 例如: 2026-04-05_143052_a1b2c3.md
 pub fn note_filename(note: &Note) -> String {
     // 从 ISO 时间戳 "2026-04-05T14:30:52" 提取日期和时间部分
-    let date_part = &note.created[..10]; // "2026-04-05"
-    let time_part = note.created[11..19].replace(':', ""); // "143052"
+    // 使用 get() 避免在格式异常时 panic
+    let date_part = note.created.get(..10).unwrap_or("0000-00-00");
+    let time_part = note.created.get(11..19)
+        .unwrap_or("000000")
+        .replace(':', "");
     format!("{}_{}_{}.md", date_part, time_part, note.id)
 }
 
@@ -140,7 +148,8 @@ pub fn delete_note(dir: &Path, id: &str) -> Result<(), String> {
     for entry in entries.flatten() {
         let path = entry.path();
         if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            if name.contains(id) && name.ends_with(".md") {
+    // 按文件名后缀精确匹配 ID，避免 ID 碰巧是日期子串时误删
+            if name.ends_with(&format!("_{}.md", id)) {
                 fs::remove_file(&path).map_err(|e| format!("删除文件失败: {e}"))?;
                 return Ok(());
             }
