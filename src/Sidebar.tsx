@@ -40,6 +40,9 @@ export default function Sidebar() {
       newInputRef?.focus();
     });
     onCleanup(() => unlisten());
+
+    // 首次挂载也聚焦输入框 (从居中模式切换过来时)
+    newInputRef?.focus();
   });
 
   /** 新建笔记 */
