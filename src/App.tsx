@@ -10,6 +10,7 @@ import { listen } from "@tauri-apps/api/event";
 import { loadNotes } from "./notes-store";
 import { loadConfig, config, currentView, setCurrentView } from "./config-store";
 import CenterMode from "./CenterMode";
+import Sidebar from "./Sidebar";
 
 export default function App() {
   onMount(async () => {
@@ -33,7 +34,7 @@ export default function App() {
         <CenterMode />
       </Show>
       <Show when={currentView() === "sidebar"}>
-        <div>侧边栏 (待实现)</div>
+        <Sidebar />
       </Show>
       <Show when={currentView() === "settings"}>
         <div>设置 (待实现)</div>
