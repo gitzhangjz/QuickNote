@@ -15,6 +15,8 @@ use tauri::{
     tray::TrayIconBuilder,
     Emitter, Manager, WebviewWindow, WindowEvent,
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
 /// 根据当前模式设置窗口的大小和位置
 /// center 模式: 500x160, 屏幕居中
@@ -71,6 +73,23 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        let state = app.state::<AppState>();
+                        let mode = state.config.lock().unwrap().mode.clone();
+                        if let Some(window) = app.get_webview_window("main") {
+                            toggle_window(&window, &mode);
+                        }
+                    }
+                })
+                .build(),
+        )
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .manage(AppState {
             notes: Mutex::new(notes),
             config: Mutex::new(app_config),
@@ -85,6 +104,8 @@ pub fn run() {
             commands::update_config,
             commands::set_prevent_hide,
             commands::apply_mode,
+            commands::update_hotkey,
+            commands::set_autostart,
         ])
         // 系统托盘和窗口事件在 setup 回调中初始化
         .setup(|app| {
@@ -140,6 +161,29 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // --- 全局快捷键 ---
+            // 从配置读取快捷键并注册
+            {
+                let state = app.state::<AppState>();
+                let config = state.config.lock().unwrap();
+                if let Ok(shortcut) = config.hotkey.parse::<Shortcut>() {
+                    let _ = app.global_shortcut().register(shortcut);
+                }
+            }
+
+            // --- 开机自启 ---
+            // 根据配置启用/禁用自启
+            {
+                let state = app.state::<AppState>();
+                let config = state.config.lock().unwrap();
+                let autostart = app.autolaunch();
+                if config.autostart {
+                    let _ = autostart.enable();
+                } else {
+                    let _ = autostart.disable();
+                }
+            }
 
             Ok(())
         })

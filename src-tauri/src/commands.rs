@@ -132,3 +132,47 @@ pub fn apply_mode(app_handle: tauri::AppHandle, mode: String) {
         crate::apply_window_mode(&window, &mode);
     }
 }
+
+/// 更新全局快捷键 —— 注销旧键，注册新键，保存配置
+#[tauri::command]
+pub fn update_hotkey(
+    app_handle: tauri::AppHandle,
+    state: State<'_, AppState>,
+    hotkey: String,
+) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+
+    let mut config = state.config.lock().unwrap();
+
+    // 注销旧快捷键
+    if let Ok(old_shortcut) = config.hotkey.parse::<Shortcut>() {
+        let _ = app_handle.global_shortcut().unregister(old_shortcut);
+    }
+
+    // 注册新快捷键
+    let new_shortcut: Shortcut = hotkey
+        .parse()
+        .map_err(|e| format!("无效的快捷键格式: {e}"))?;
+    app_handle
+        .global_shortcut()
+        .register(new_shortcut)
+        .map_err(|e| format!("注册快捷键失败: {e}"))?;
+
+    config.hotkey = hotkey;
+    let config_clone = config.clone();
+    drop(config); // 释放锁再写文件
+    crate::config::save_config(&config_clone)
+}
+
+/// 设置开机自启状态
+#[tauri::command]
+pub fn set_autostart(app_handle: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+    let autostart = app_handle.autolaunch();
+    if enabled {
+        autostart.enable().map_err(|e| format!("{e}"))?;
+    } else {
+        autostart.disable().map_err(|e| format!("{e}"))?;
+    }
+    Ok(())
+}
