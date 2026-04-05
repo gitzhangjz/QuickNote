@@ -1,5 +1,6 @@
 //! QuickNote 应用入口 —— 配置 Tauri 插件和窗口行为
 
+mod config;
 mod note;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
