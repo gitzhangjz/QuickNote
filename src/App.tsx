@@ -25,7 +25,17 @@ export default function App() {
     const unlisten = await listen<string>("navigate", (event) => {
       setCurrentView(event.payload);
     });
-    onCleanup(() => unlisten());
+
+    // 窗口获得焦点时，如果当前不在设置页，恢复到配置的模式
+    const unlistenFocus = await listen("tauri://focus", () => {
+      if (currentView() !== "settings") {
+        setCurrentView(config().mode);
+      }
+    });
+    onCleanup(() => {
+      unlisten();
+      unlistenFocus();
+    });
   });
 
   return (
