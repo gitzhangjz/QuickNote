@@ -15,6 +15,8 @@ import { createSignal, onMount, onCleanup, For, Show } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createNote, filteredNotes, loadNotes, deleteNote, updateNote } from "./notes-store";
+import { setCurrentView, switchMode } from "./config-store";
+import { invoke } from "@tauri-apps/api/core";
 
 export default function CenterMode() {
   let inputRef!: HTMLTextAreaElement;
@@ -75,6 +77,10 @@ export default function CenterMode() {
       // Ctrl+S 切换置顶
       e.preventDefault();
       setPinned((prev) => !prev);
+    } else if (e.key === "m" && (e.ctrlKey || e.metaKey)) {
+      // Ctrl+M 切换模式
+      e.preventDefault();
+      switchMode();
     }
   }
 
@@ -114,8 +120,16 @@ export default function CenterMode() {
             </span>
           </div>
           <div class="center-hints-right">
-            <span class="hint">Enter 保存</span>
-            <span class="hint">Esc 关闭</span>
+            <button class="icon-btn" onClick={() => switchMode()} title="切换到侧边栏 (Ctrl+M)">
+              {"\u21C4"}
+            </button>
+            <button class="icon-btn" onClick={async () => {
+              await invoke("set_prevent_hide", { prevent: true });
+              setCurrentView("settings");
+              await invoke("apply_mode", { mode: "settings" });
+            }} title="设置">
+              {"\u2699"}
+            </button>
           </div>
         </div>
       </div>

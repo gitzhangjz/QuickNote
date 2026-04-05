@@ -23,13 +23,15 @@ import {
   setShowPinnedOnly,
   loadNotes,
 } from "./notes-store";
-import { setCurrentView } from "./config-store";
+import { setCurrentView, switchMode } from "./config-store";
+import { invoke } from "@tauri-apps/api/core";
 import NoteItem from "./NoteItem";
 
 export default function Sidebar() {
   const [newContent, setNewContent] = createSignal("");
   const [showSearch, setShowSearch] = createSignal(false);
   let newInputRef!: HTMLInputElement;
+  let searchInputRef!: HTMLInputElement;
 
   onMount(async () => {
     // 窗口获得焦点时刷新笔记列表
@@ -65,9 +67,18 @@ export default function Sidebar() {
     } else if (e.key === "Escape") {
       getCurrentWindow().hide();
     } else if (e.key === "f" && (e.ctrlKey || e.metaKey)) {
-      // Ctrl+F 切换搜索栏
+      // Ctrl+F 切换搜索栏并聚焦
       e.preventDefault();
-      setShowSearch((s) => !s);
+      const willShow = !showSearch();
+      setShowSearch(willShow);
+      if (willShow) {
+        // 等 DOM 更新后聚焦搜索框
+        requestAnimationFrame(() => searchInputRef?.focus());
+      }
+    } else if (e.key === "m" && (e.ctrlKey || e.metaKey)) {
+      // Ctrl+M 切换模式
+      e.preventDefault();
+      switchMode();
     }
   }
 
@@ -79,14 +90,29 @@ export default function Sidebar() {
         <div class="sidebar-actions">
           <button
             class="icon-btn"
-            onClick={() => setShowSearch((s) => !s)}
-            title="搜索"
+            onClick={() => setShowSearch((s) => {
+              const willShow = !s;
+              if (willShow) requestAnimationFrame(() => searchInputRef?.focus());
+              return willShow;
+            })}
+            title="搜索 (Ctrl+F)"
           >
             {"\uD83D\uDD0D"}
           </button>
           <button
             class="icon-btn"
-            onClick={() => setCurrentView("settings")}
+            onClick={() => switchMode()}
+            title="切换到居中模式 (Ctrl+M)"
+          >
+            {"\u21C4"}
+          </button>
+          <button
+            class="icon-btn"
+            onClick={async () => {
+              await invoke("set_prevent_hide", { prevent: true });
+              setCurrentView("settings");
+              await invoke("apply_mode", { mode: "settings" });
+            }}
             title="设置"
           >
             {"\u2699"}
@@ -98,6 +124,7 @@ export default function Sidebar() {
       <Show when={showSearch()}>
         <div class="sidebar-search">
           <input
+            ref={searchInputRef}
             class="search-input"
             placeholder="搜索笔记..."
             value={searchQuery()}

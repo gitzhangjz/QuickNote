@@ -53,4 +53,13 @@ export async function setAutostart(enabled: boolean) {
   setConfig((prev) => ({ ...prev, autostart: enabled }));
 }
 
+/** 切换模式 (center↔sidebar)，保存配置并调整窗口 */
+export async function switchMode() {
+  const newMode = config().mode === "center" ? "sidebar" : "center";
+  const newConfig = { ...config(), mode: newMode as "center" | "sidebar" };
+  await saveConfig(newConfig);
+  setCurrentView(newMode);
+  await invoke("apply_mode", { mode: newMode });
+}
+
 export { config, setConfig, currentView, setCurrentView };
