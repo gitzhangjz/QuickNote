@@ -27,7 +27,7 @@ html, body {
   --tag-bg: #3a3a5e;
   --tag-text: #6a9eff;
   --pin-active: #ffd700;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
 }
 
 /* ===== 亮色主题 ===== */
@@ -43,7 +43,7 @@ html, body {
   --tag-bg: #e8e8f0;
   --tag-text: #4a7eff;
   --pin-active: #f5a623;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.12);
 }
 
 .app {
