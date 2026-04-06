@@ -130,8 +130,11 @@ export default function Sidebar() {
   }
 
   /** 全局键盘事件 (侧边栏容器级别) */
-  function handleKeyDown(e: KeyboardEvent) {
+  async function handleKeyDown(e: KeyboardEvent) {
     if (e.key === "Escape") {
+      setCurrentView("sidebar");
+      await invoke("set_prevent_hide", { prevent: false });
+      await invoke("apply_mode", { mode: "sidebar" });
       getCurrentWindow().hide();
     } else if (e.key === "f" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();

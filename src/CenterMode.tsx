@@ -42,7 +42,7 @@ export default function CenterMode() {
     inputRef?.focus();
 
     // 全局 Esc 键监听 —— 无论焦点在哪都能关闭窗口
-    function handleGlobalKeyDown(e: KeyboardEvent) {
+    async function handleGlobalKeyDown(e: KeyboardEvent) {
       // 如果当前焦点在输入框，走 handleKeyDown 处理
       if (document.activeElement === inputRef) return;
 
@@ -55,6 +55,9 @@ export default function CenterMode() {
 
       if (e.key === "Escape") {
         e.preventDefault();
+        setCurrentView("center");
+        await invoke("set_prevent_hide", { prevent: false });
+        await invoke("apply_mode", { mode: "center" });
         getCurrentWindow().hide();
       }
     }
@@ -145,6 +148,9 @@ export default function CenterMode() {
       e.preventDefault();
       handleSave();
     } else if (e.key === "Escape") {
+      setCurrentView("center");
+      invoke("set_prevent_hide", { prevent: false });
+      invoke("apply_mode", { mode: "center" });
       getCurrentWindow().hide();
     } else if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
