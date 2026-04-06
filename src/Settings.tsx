@@ -8,12 +8,14 @@
  * - 开机自启 (开/关)
  * - 笔记存储目录
  *
- * 进入时禁用窗口自动隐藏，退出时恢复
- * Esc 自动保存设置并退出
+ * 进入时禁用窗口自动隐藏
+ * Esc / 失去焦点 自动保存设置并退出
  */
 
 import { createSignal, onMount, onCleanup } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   config,
   saveConfig,
@@ -36,25 +38,57 @@ export default function Settings() {
   const [localConfig, setLocalConfig] = createSignal<AppConfig>({ ...config() });
   const [recording, setRecording] = createSignal(false);
   const [hotkeyDisplay, setHotkeyDisplay] = createSignal(config().hotkey);
+  const [saving, setSaving] = createSignal(false);
 
-  // 暴露给 App.tsx 的全局 Esc 处理器使用
-  onMount(() => {
-    (window as any).__settingsLocalConfig = localConfig;
-    (window as any).__settingsRecording = recording;
-  });
+  /** 保存设置并退出 —— 所有退出路径共用 */
+  async function saveAndExit() {
+    if (saving()) return;
+    setSaving(true);
 
-  onCleanup(() => {
-    delete (window as any).__settingsLocalConfig;
-    delete (window as any).__settingsRecording;
-  });
+    const newConfig = localConfig();
+
+    if (newConfig.hotkey !== config().hotkey) {
+      try { await updateHotkey(newConfig.hotkey); } catch {}
+    }
+    if (newConfig.autostart !== config().autostart) {
+      try { await setAutostart(newConfig.autostart); } catch {}
+    }
+    try { await saveConfig(newConfig); } catch {}
+
+    setCurrentView(newConfig.mode);
+    await invoke("set_prevent_hide", { prevent: false });
+    await invoke("apply_mode", { mode: newConfig.mode });
+
+    // 保存后隐藏窗口，下次呼出恢复正常界面
+    await getCurrentWindow().hide();
+
+    setSaving(false);
+  }
 
   onMount(async () => {
-    // 进入设置页时，禁用窗口自动隐藏
     await invoke("set_prevent_hide", { prevent: true });
+
+    // Esc 自动保存并退出
+    function handleEsc(e: KeyboardEvent) {
+      if (recording()) return; // 录入快捷键时不响应
+      if (e.key === "Escape") {
+        saveAndExit();
+      }
+    }
+    document.addEventListener("keydown", handleEsc);
+
+    // 窗口失去焦点 (点击空白处) 自动保存并退出
+    const unlistenBlur = await listen("tauri://blur", () => {
+      saveAndExit();
+    });
+
+    onCleanup(() => {
+      document.removeEventListener("keydown", handleEsc);
+      unlistenBlur();
+    });
   });
 
   onCleanup(async () => {
-    // 离开设置页时，恢复窗口自动隐藏
     await invoke("set_prevent_hide", { prevent: false });
   });
 
@@ -63,7 +97,6 @@ export default function Settings() {
     if (!recording()) return;
     e.preventDefault();
 
-    // 忽略单独的修饰键
     if (["Alt", "Control", "Shift", "Meta"].includes(e.key)) return;
 
     const parts: string[] = [];
@@ -71,7 +104,7 @@ export default function Settings() {
     if (e.altKey) parts.push("Alt");
     if (e.shiftKey) parts.push("Shift");
     if (e.metaKey) parts.push("Super");
-    parts.push(e.code); // 使用 e.code 匹配 Tauri 快捷键格式
+    parts.push(e.code);
 
     const hotkeyStr = parts.join("+");
     setHotkeyDisplay(hotkeyStr);
@@ -86,41 +119,14 @@ export default function Settings() {
     setRecording(false);
   }
 
-  /** 保存所有设置 */
+  /** 手动保存按钮 */
   async function handleSave() {
-    const newConfig = localConfig();
-
-    // 快捷键变更需要单独处理 (注销旧的 + 注册新的)
-    if (newConfig.hotkey !== config().hotkey) {
-      try {
-        await updateHotkey(newConfig.hotkey);
-      } catch (e) {
-        alert("快捷键注册失败: " + e);
-        return;
-      }
-    }
-
-    // 开机自启变更
-    if (newConfig.autostart !== config().autostart) {
-      await setAutostart(newConfig.autostart);
-    }
-
-    // 保存全量配置
-    await saveConfig(newConfig);
-
-    // 返回到配置的模式并调整窗口
-    await invoke("set_prevent_hide", { prevent: false });
-    setCurrentView(newConfig.mode);
-    await invoke("apply_mode", { mode: newConfig.mode });
+    await saveAndExit();
   }
 
-  /** 返回到之前的模式 */
+  /** 返回按钮 */
   async function handleBack() {
-    await invoke("set_prevent_hide", { prevent: false });
-    const mode = localConfig().mode;
-    setCurrentView(mode);
-    // 通知后端调整窗口尺寸/位置
-    await invoke("apply_mode", { mode });
+    await saveAndExit();
   }
 
   return (
