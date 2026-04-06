@@ -2,6 +2,14 @@
 
 轻量级桌面便签工具，支持全局热键快速唤起，本地优先存储。
 
+## 下载
+
+| 平台 | 文件 | 大小 |
+|------|------|------|
+| Windows x64 | [QuickNote-v0.1.0-x64.msi](https://github.com/gitzhangjz/QuickNote/releases/download/v0.1.0/QuickNote-v0.1.0-x64.msi) | 3.2 MB |
+
+> 更多版本见 [Releases](https://github.com/gitzhangjz/QuickNote/releases)
+
 ## 功能特性
 
 - **全局热键唤起** — 默认 `Alt+Space`（可自定义），随时呼出
