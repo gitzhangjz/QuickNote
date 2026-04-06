@@ -8,7 +8,7 @@
 import { onMount, Show, onCleanup } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { loadNotes } from "./notes-store";
-import { loadConfig, config, currentView, setCurrentView } from "./config-store";
+import { loadConfig, config, currentView, setCurrentView, applyTheme, ThemeName } from "./config-store";
 import CenterMode from "./CenterMode";
 import Sidebar from "./Sidebar";
 import Settings from "./Settings";
@@ -27,6 +27,11 @@ export default function App() {
       setCurrentView(event.payload);
     });
 
+    // 监听后端发来的主题变更事件 (如托盘菜单点击主题)
+    const unlistenTheme = await listen<string>("theme_changed", (event) => {
+      applyTheme(event.payload as ThemeName);
+    });
+
     // 窗口获得焦点时，如果当前不在设置页，恢复到配置的模式
     const unlistenFocus = await listen("tauri://focus", () => {
       if (currentView() !== "settings") {
@@ -36,6 +41,7 @@ export default function App() {
     onCleanup(() => {
       unlisten();
       unlistenFocus();
+      unlistenTheme();
     });
   });
 
