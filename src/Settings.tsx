@@ -37,8 +37,17 @@ const HOTKEY_PRESETS = [
 export default function Settings() {
   const [localConfig, setLocalConfig] = createSignal<AppConfig>({ ...config() });
   const [recording, setRecording] = createSignal(false);
-  const [hotkeyDisplay, setHotkeyDisplay] = createSignal(config().hotkey);
   const [saving, setSaving] = createSignal(false);
+
+  /** 热键显示文本 */
+  function hotkeyDisplay() {
+    const hk = localConfig().hotkey;
+    if (recording()) return "按下组合键...";
+    if (hk === "Alt+Space") return "Alt+Space";
+    if (hk === "Control+Space") return "Ctrl+Space";
+    if (hk === "Alt+Shift+Space") return "Alt+Shift+Space";
+    return hk;
+  }
 
   /** 保存设置到后端 */
   async function doSave() {
@@ -106,14 +115,12 @@ export default function Settings() {
     parts.push(e.code);
 
     const hotkeyStr = parts.join("+");
-    setHotkeyDisplay(hotkeyStr);
     setLocalConfig((c) => ({ ...c, hotkey: hotkeyStr }));
     setRecording(false);
   }
 
   /** 快捷选择预设 */
   function selectHotkeyPreset(value: string, label: string) {
-    setHotkeyDisplay(label);
     setLocalConfig((c) => ({ ...c, hotkey: value }));
     setRecording(false);
   }
@@ -147,7 +154,7 @@ export default function Settings() {
           </div>
           <input
             class="hotkey-display"
-            value={recording() ? "按下组合键..." : hotkeyDisplay()}
+            value={hotkeyDisplay()}
             readOnly
             onFocus={() => setRecording(true)}
             onBlur={() => setRecording(false)}
