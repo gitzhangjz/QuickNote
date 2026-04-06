@@ -11,7 +11,7 @@ mod note;
 use commands::AppState;
 use std::sync::Mutex;
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{Menu, MenuItem, Submenu},
     tray::TrayIconBuilder,
     Emitter, Manager, WebviewWindow, WindowEvent,
 };
@@ -113,11 +113,30 @@ pub fn run() {
             // --- 系统托盘 ---
             let show_item = MenuItem::with_id(app, "show", "显示/隐藏", true, None::<&str>)?;
             let mode_item = MenuItem::with_id(app, "mode", "切换模式", true, None::<&str>)?;
+
+            // 主题子菜单
+            let theme_dark = MenuItem::with_id(app, "theme_dark", "暗夜深色", true, None::<&str>)?;
+            let theme_light = MenuItem::with_id(app, "theme_light", "明亮浅色", true, None::<&str>)?;
+            let theme_amoled = MenuItem::with_id(app, "theme_amoled", "AMOLED 纯黑", true, None::<&str>)?;
+            let theme_ocean = MenuItem::with_id(app, "theme_ocean", "深海蓝", true, None::<&str>)?;
+            let theme_forest = MenuItem::with_id(app, "theme_forest", "森林绿", true, None::<&str>)?;
+            let theme_sunset = MenuItem::with_id(app, "theme_sunset", "日落暖橙", true, None::<&str>)?;
+            let theme_sakura = MenuItem::with_id(app, "theme_sakura", "樱花粉", true, None::<&str>)?;
+            let theme_cyberpunk = MenuItem::with_id(app, "theme_cyberpunk", "赛博朋克", true, None::<&str>)?;
+
+            let theme_menu = Submenu::with_items(
+                app,
+                "切换主题",
+                true,
+                &[&theme_dark, &theme_light, &theme_amoled, &theme_ocean,
+                  &theme_forest, &theme_sunset, &theme_sakura, &theme_cyberpunk],
+            )?;
+
             let settings_item = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(
                 app,
-                &[&show_item, &mode_item, &settings_item, &quit_item],
+                &[&show_item, &mode_item, &theme_menu, &settings_item, &quit_item],
             )?;
 
             let _tray = TrayIconBuilder::new()
@@ -145,6 +164,16 @@ pub fn run() {
                             if window.is_visible().unwrap_or(false) {
                                 apply_window_mode(&window, &config.mode);
                             }
+                        }
+                        "theme_dark" | "theme_light" | "theme_amoled" | "theme_ocean"
+                        | "theme_forest" | "theme_sunset" | "theme_sakura" | "theme_cyberpunk" => {
+                            // 提取主题名称
+                            let theme = event.id.as_ref().strip_prefix("theme_").unwrap();
+                            let mut config = state.config.lock().unwrap();
+                            config.theme = theme.to_string();
+                            let _ = crate::config::save_config(&config);
+                            // 通知前端更新主题
+                            let _ = window.emit("theme_changed", theme);
                         }
                         "settings" => {
                             // 打开设置视图
