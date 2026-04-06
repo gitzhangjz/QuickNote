@@ -176,3 +176,16 @@ pub fn set_autostart(app_handle: tauri::AppHandle, enabled: bool) -> Result<(), 
     }
     Ok(())
 }
+
+/// 更新主题
+#[tauri::command]
+pub fn update_theme(
+    state: State<'_, AppState>,
+    theme: String,
+) -> Result<(), String> {
+    let mut config = state.config.lock().unwrap();
+    config.theme = theme;
+    let config_clone = config.clone();
+    drop(config); // 释放锁再写文件
+    crate::config::save_config(&config_clone)
+}

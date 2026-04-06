@@ -106,6 +106,7 @@ pub fn run() {
             commands::apply_mode,
             commands::update_hotkey,
             commands::set_autostart,
+            commands::update_theme,
         ])
         // 系统托盘和窗口事件在 setup 回调中初始化
         .setup(|app| {
