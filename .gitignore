@@ -1,4 +1,24 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 src-tauri/target/
+
+# IDE
+.vscode/
+.idea/
+
+# Superpowers brainstorming files
 .superpowers/
+
+# Claude
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
