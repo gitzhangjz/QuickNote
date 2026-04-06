@@ -40,6 +40,26 @@ export default function CenterMode() {
 
     // 首次挂载也聚焦
     inputRef?.focus();
+
+    // 全局 Esc 键监听 —— 无论焦点在哪都能关闭窗口
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      // 如果当前焦点在输入框，走 handleKeyDown 处理
+      if (document.activeElement === inputRef) return;
+
+      // 标签建议激活时，不处理全局 Esc
+      if (tagCtx()) {
+        setTagCtx(null);
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        getCurrentWindow().hide();
+      }
+    }
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    onCleanup(() => document.removeEventListener("keydown", handleGlobalKeyDown));
   });
 
   /** 从文本中提取 #标签 并返回 [清理后的文本, 标签数组] */
