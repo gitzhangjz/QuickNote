@@ -87,17 +87,22 @@ export default function Settings() {
   onMount(async () => {
     await invoke("set_prevent_hide", { prevent: true });
 
-    // Esc 自动保存并隐藏窗口
+    // Esc 自动保存并隐藏窗口（录入快捷键时不响应）
     function handleEsc(e: KeyboardEvent) {
       if (recording()) return;
       if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
         saveAndHide();
       }
     }
+
     document.addEventListener("keydown", handleEsc);
+    document.addEventListener("keydown", handleHotkeyKeyDown, true); // capture phase for hotkey recording
 
     onCleanup(() => {
       document.removeEventListener("keydown", handleEsc);
+      document.removeEventListener("keydown", handleHotkeyKeyDown, true);
     });
   });
 
@@ -105,6 +110,14 @@ export default function Settings() {
   function handleHotkeyKeyDown(e: KeyboardEvent) {
     if (!recording()) return;
     e.preventDefault();
+    e.stopPropagation();
+
+    // Esc 取消录入
+    if (e.key === "Escape") {
+      setRecording(false);
+      return;
+    }
+
     if (["Alt", "Control", "Shift", "Meta"].includes(e.key)) return;
 
     const parts: string[] = [];
@@ -156,9 +169,6 @@ export default function Settings() {
             class="hotkey-display"
             value={hotkeyDisplay()}
             readOnly
-            onFocus={() => setRecording(true)}
-            onBlur={() => setRecording(false)}
-            onKeyDown={handleHotkeyKeyDown}
           />
         </div>
 
