@@ -72,6 +72,16 @@ pub fn run() {
     let notes = note::load_all_notes(&notes_dir);
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // 第二次启动时，聚焦已有窗口
+            let state = app.state::<AppState>();
+            let mode = state.config.lock().unwrap().mode.clone();
+            if let Some(window) = app.get_webview_window("main") {
+                apply_window_mode(&window, &mode);
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
