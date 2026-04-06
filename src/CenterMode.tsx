@@ -16,7 +16,7 @@ import { createSignal, onMount, onCleanup, For, Show } from "solid-js";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createNote, filteredNotes, loadNotes, deleteNote, updateNote } from "./notes-store";
-import { setCurrentView, switchMode } from "./config-store";
+import { setCurrentView, switchMode, currentView } from "./config-store";
 import { invoke } from "@tauri-apps/api/core";
 import TagSuggest, { getTagContext, getFilteredTags, insertTag } from "./TagSuggest";
 
@@ -43,6 +43,9 @@ export default function CenterMode() {
 
     // 全局 Esc 键监听 —— 无论焦点在哪都能关闭窗口
     async function handleGlobalKeyDown(e: KeyboardEvent) {
+      // 只在居中模式时响应，避免与侧边栏/设置页面冲突
+      if (currentView() !== "center") return;
+
       // 如果当前焦点在输入框，走 handleKeyDown 处理
       if (document.activeElement === inputRef) return;
 
