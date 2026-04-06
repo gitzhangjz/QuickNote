@@ -57,7 +57,6 @@ export default function CenterMode() {
         e.preventDefault();
         setCurrentView("center");
         await invoke("set_prevent_hide", { prevent: false });
-        await invoke("apply_mode", { mode: "center" });
         getCurrentWindow().hide();
       }
     }
@@ -150,7 +149,6 @@ export default function CenterMode() {
     } else if (e.key === "Escape") {
       setCurrentView("center");
       invoke("set_prevent_hide", { prevent: false });
-      invoke("apply_mode", { mode: "center" });
       getCurrentWindow().hide();
     } else if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();

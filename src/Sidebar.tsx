@@ -134,7 +134,6 @@ export default function Sidebar() {
     if (e.key === "Escape") {
       setCurrentView("sidebar");
       await invoke("set_prevent_hide", { prevent: false });
-      await invoke("apply_mode", { mode: "sidebar" });
       getCurrentWindow().hide();
     } else if (e.key === "f" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
