@@ -20,6 +20,8 @@ import {
   setAutostart,
   setCurrentView,
   AppConfig,
+  THEMES,
+  applyTheme,
 } from "./config-store";
 
 export default function Settings() {
@@ -139,20 +141,25 @@ export default function Settings() {
 
         {/* 主题 */}
         <div class="setting-item">
-          <label class="setting-label">主题</label>
-          <div class="setting-options">
-            <button
-              class={"option-btn" + (localConfig().theme === "dark" ? " active" : "")}
-              onClick={() => setLocalConfig((c) => ({ ...c, theme: "dark" }))}
-            >
-              暗色
-            </button>
-            <button
-              class={"option-btn" + (localConfig().theme === "light" ? " active" : "")}
-              onClick={() => setLocalConfig((c) => ({ ...c, theme: "light" }))}
-            >
-              亮色
-            </button>
+          <label class="setting-label">主题颜色</label>
+          <div class="theme-grid">
+            {THEMES.map((theme) => (
+              <button
+                class={"theme-btn" + (localConfig().theme === theme.name ? " active" : "")}
+                onClick={() => {
+                  setLocalConfig((c) => ({ ...c, theme: theme.name }));
+                  applyTheme(theme.name);
+                }}
+              >
+                <div class="theme-preview">
+                  <div style={{ background: theme.colors.bg }} />
+                  <div style={{ background: theme.colors.secondary }} />
+                  <div style={{ background: theme.colors.accent }} />
+                  <div style={{ background: theme.colors.text }} />
+                </div>
+                <span class="theme-name">{theme.label}</span>
+              </button>
+            ))}
           </div>
         </div>
 
