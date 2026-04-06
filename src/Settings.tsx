@@ -13,7 +13,7 @@
  * 返回按钮保存并返回主界面
  */
 
-import { createSignal, onMount, onCleanup } from "solid-js";
+import { createSignal, createMemo, createEffect, onMount, onCleanup } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
@@ -40,14 +40,14 @@ export default function Settings() {
   const [saving, setSaving] = createSignal(false);
 
   /** 热键显示文本 */
-  function hotkeyDisplay() {
+  const hotkeyDisplay = createMemo(() => {
     const hk = localConfig().hotkey;
     if (recording()) return "按下组合键...";
     if (hk === "Alt+Space") return "Alt+Space";
     if (hk === "Control+Space") return "Ctrl+Space";
     if (hk === "Alt+Shift+Space") return "Alt+Shift+Space";
     return hk;
-  }
+  });
 
   /** 保存设置到后端 */
   async function doSave() {
@@ -98,39 +98,52 @@ export default function Settings() {
     }
 
     document.addEventListener("keydown", handleEsc);
-    document.addEventListener("keydown", handleHotkeyKeyDown, true); // capture phase for hotkey recording
+
+    // 快捷键录入 —— 使用 createEffect 确保每次 recording 变化时
+    // 监听器都能读取到最新的信号值（避免闭包陈旧引用）
+    let cleanupHotkey: (() => void) | null = null;
+    const registerHotkeyListener = () => {
+      cleanupHotkey?.();
+      const handler = (e: KeyboardEvent) => {
+        if (!recording()) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Esc 取消录入
+        if (e.key === "Escape") {
+          setRecording(false);
+          return;
+        }
+
+        if (["Alt", "Control", "Shift", "Meta"].includes(e.key)) return;
+
+        const parts: string[] = [];
+        if (e.ctrlKey) parts.push("Control");
+        if (e.altKey) parts.push("Alt");
+        if (e.shiftKey) parts.push("Shift");
+        if (e.metaKey) parts.push("Super");
+        parts.push(e.code);
+
+        const hotkeyStr = parts.join("+");
+        setLocalConfig((c) => ({ ...c, hotkey: hotkeyStr }));
+        setRecording(false);
+      };
+      document.addEventListener("keydown", handler, true);
+      cleanupHotkey = () => {
+        document.removeEventListener("keydown", handler, true);
+      };
+    };
+
+    createEffect(() => {
+      recording(); // 追踪 recording 信号，每次变化时重新注册
+      registerHotkeyListener();
+    });
 
     onCleanup(() => {
       document.removeEventListener("keydown", handleEsc);
-      document.removeEventListener("keydown", handleHotkeyKeyDown, true);
+      cleanupHotkey?.();
     });
   });
-
-  /** 快捷键录入 */
-  function handleHotkeyKeyDown(e: KeyboardEvent) {
-    if (!recording()) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Esc 取消录入
-    if (e.key === "Escape") {
-      setRecording(false);
-      return;
-    }
-
-    if (["Alt", "Control", "Shift", "Meta"].includes(e.key)) return;
-
-    const parts: string[] = [];
-    if (e.ctrlKey) parts.push("Control");
-    if (e.altKey) parts.push("Alt");
-    if (e.shiftKey) parts.push("Shift");
-    if (e.metaKey) parts.push("Super");
-    parts.push(e.code);
-
-    const hotkeyStr = parts.join("+");
-    setLocalConfig((c) => ({ ...c, hotkey: hotkeyStr }));
-    setRecording(false);
-  }
 
   /** 快捷选择预设 */
   function selectHotkeyPreset(value: string, label: string) {
