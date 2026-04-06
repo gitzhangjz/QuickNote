@@ -9,12 +9,12 @@
  * - 笔记存储目录
  *
  * 进入时禁用窗口自动隐藏
- * Esc / 失去焦点 自动保存设置并退出
+ * Esc 自动保存并关闭窗口
+ * 返回按钮保存并返回主界面
  */
 
 import { createSignal, onMount, onCleanup } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   config,
@@ -40,63 +40,62 @@ export default function Settings() {
   const [hotkeyDisplay, setHotkeyDisplay] = createSignal(config().hotkey);
   const [saving, setSaving] = createSignal(false);
 
-  /** 保存设置并退出 —— 所有退出路径共用 */
-  async function saveAndExit() {
+  /** 保存设置到后端 */
+  async function doSave() {
     if (saving()) return;
     setSaving(true);
 
     const newConfig = localConfig();
 
     if (newConfig.hotkey !== config().hotkey) {
-      try { await updateHotkey(newConfig.hotkey); } catch {}
+      await updateHotkey(newConfig.hotkey);
     }
     if (newConfig.autostart !== config().autostart) {
-      try { await setAutostart(newConfig.autostart); } catch {}
+      await setAutostart(newConfig.autostart);
     }
-    try { await saveConfig(newConfig); } catch {}
-
-    setCurrentView(newConfig.mode);
-    await invoke("set_prevent_hide", { prevent: false });
-    await invoke("apply_mode", { mode: newConfig.mode });
-
-    // 保存后隐藏窗口，下次呼出恢复正常界面
-    await getCurrentWindow().hide();
+    await saveConfig(newConfig);
 
     setSaving(false);
+  }
+
+  /** 保存并隐藏窗口（Esc / 失焦） */
+  async function saveAndHide() {
+    await doSave();
+    setCurrentView(localConfig().mode);
+    await invoke("set_prevent_hide", { prevent: false });
+    await invoke("apply_mode", { mode: localConfig().mode });
+    await getCurrentWindow().hide();
+  }
+
+  /** 保存并返回主界面（返回按钮） */
+  async function saveAndBack() {
+    await doSave();
+    setCurrentView(localConfig().mode);
+    await invoke("apply_mode", { mode: localConfig().mode });
+    await invoke("set_prevent_hide", { prevent: false });
   }
 
   onMount(async () => {
     await invoke("set_prevent_hide", { prevent: true });
 
-    // Esc 自动保存并退出
+    // Esc 自动保存并隐藏窗口
     function handleEsc(e: KeyboardEvent) {
-      if (recording()) return; // 录入快捷键时不响应
+      if (recording()) return;
       if (e.key === "Escape") {
-        saveAndExit();
+        saveAndHide();
       }
     }
     document.addEventListener("keydown", handleEsc);
 
-    // 窗口失去焦点 (点击空白处) 自动保存并退出
-    const unlistenBlur = await listen("tauri://blur", () => {
-      saveAndExit();
-    });
-
     onCleanup(() => {
       document.removeEventListener("keydown", handleEsc);
-      unlistenBlur();
     });
   });
 
-  onCleanup(async () => {
-    await invoke("set_prevent_hide", { prevent: false });
-  });
-
-  /** 快捷键录入: 捕获按键组合 */
+  /** 快捷键录入 */
   function handleHotkeyKeyDown(e: KeyboardEvent) {
     if (!recording()) return;
     e.preventDefault();
-
     if (["Alt", "Control", "Shift", "Meta"].includes(e.key)) return;
 
     const parts: string[] = [];
@@ -112,27 +111,17 @@ export default function Settings() {
     setRecording(false);
   }
 
-  /** 快捷选择预设快捷键 */
+  /** 快捷选择预设 */
   function selectHotkeyPreset(value: string, label: string) {
     setHotkeyDisplay(label);
     setLocalConfig((c) => ({ ...c, hotkey: value }));
     setRecording(false);
   }
 
-  /** 手动保存按钮 */
-  async function handleSave() {
-    await saveAndExit();
-  }
-
-  /** 返回按钮 */
-  async function handleBack() {
-    await saveAndExit();
-  }
-
   return (
     <div class="settings">
       <div class="settings-header" data-tauri-drag-region>
-        <button class="back-btn" onClick={handleBack}>{"\u2190"} 返回</button>
+        <button class="back-btn" onClick={saveAndBack}>{"\u2190"} 返回</button>
         <h2 class="settings-title">设置</h2>
       </div>
 
@@ -236,7 +225,7 @@ export default function Settings() {
       </div>
 
       <div class="settings-footer">
-        <button class="save-btn" onClick={handleSave}>保存设置</button>
+        <button class="save-btn" onClick={saveAndHide}>保存并关闭</button>
       </div>
     </div>
   );
