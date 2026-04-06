@@ -2,13 +2,14 @@
  * 设置页面 —— 应用配置管理
  *
  * 可配置项:
- * - 全局快捷键 (按键录入)
+ * - 全局快捷键 (按键录入 / 快捷选择)
  * - 呼出模式 (居中/侧边栏)
  * - 主题 (暗色/亮色)
  * - 开机自启 (开/关)
  * - 笔记存储目录
  *
  * 进入时禁用窗口自动隐藏，退出时恢复
+ * Esc 自动保存设置并退出
  */
 
 import { createSignal, onMount, onCleanup } from "solid-js";
@@ -24,10 +25,28 @@ import {
   applyTheme,
 } from "./config-store";
 
+/** 常用快捷键预设 */
+const HOTKEY_PRESETS = [
+  { label: "Alt+Space", value: "Alt+Space" },
+  { label: "Ctrl+Space", value: "Control+Space" },
+  { label: "Alt+Shift+Space", value: "Alt+Shift+Space" },
+];
+
 export default function Settings() {
   const [localConfig, setLocalConfig] = createSignal<AppConfig>({ ...config() });
   const [recording, setRecording] = createSignal(false);
   const [hotkeyDisplay, setHotkeyDisplay] = createSignal(config().hotkey);
+
+  // 暴露给 App.tsx 的全局 Esc 处理器使用
+  onMount(() => {
+    (window as any).__settingsLocalConfig = localConfig;
+    (window as any).__settingsRecording = recording;
+  });
+
+  onCleanup(() => {
+    delete (window as any).__settingsLocalConfig;
+    delete (window as any).__settingsRecording;
+  });
 
   onMount(async () => {
     // 进入设置页时，禁用窗口自动隐藏
@@ -57,6 +76,13 @@ export default function Settings() {
     const hotkeyStr = parts.join("+");
     setHotkeyDisplay(hotkeyStr);
     setLocalConfig((c) => ({ ...c, hotkey: hotkeyStr }));
+    setRecording(false);
+  }
+
+  /** 快捷选择预设快捷键 */
+  function selectHotkeyPreset(value: string, label: string) {
+    setHotkeyDisplay(label);
+    setLocalConfig((c) => ({ ...c, hotkey: value }));
     setRecording(false);
   }
 
@@ -108,16 +134,30 @@ export default function Settings() {
         {/* 快捷键 */}
         <div class="setting-item">
           <label class="setting-label">全局快捷键</label>
-          <div class="hotkey-input">
-            <input
-              class="hotkey-display"
-              value={recording() ? "按下组合键..." : hotkeyDisplay()}
-              readOnly
-              onFocus={() => setRecording(true)}
-              onBlur={() => setRecording(false)}
-              onKeyDown={handleHotkeyKeyDown}
-            />
+          <div class="setting-options" style={{ "margin-bottom": "8px", "flex-wrap": "wrap" }}>
+            {HOTKEY_PRESETS.map((preset) => (
+              <button
+                class={"option-btn" + (localConfig().hotkey === preset.value ? " active" : "")}
+                onClick={() => selectHotkeyPreset(preset.value, preset.label)}
+              >
+                {preset.label}
+              </button>
+            ))}
+            <button
+              class={"option-btn" + (recording() ? " active" : "")}
+              onClick={() => setRecording(true)}
+            >
+              {recording() ? "录入中..." : "自定义"}
+            </button>
           </div>
+          <input
+            class="hotkey-display"
+            value={recording() ? "按下组合键..." : hotkeyDisplay()}
+            readOnly
+            onFocus={() => setRecording(true)}
+            onBlur={() => setRecording(false)}
+            onKeyDown={handleHotkeyKeyDown}
+          />
         </div>
 
         {/* 呼出模式 */}
